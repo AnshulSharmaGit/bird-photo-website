@@ -1,0 +1,78 @@
+'use client'
+
+import { useState } from 'react'
+import type { SiteConfig } from '@/types'
+
+export default function SettingsForm({ config }: { config: SiteConfig }) {
+  const [fields, setFields] = useState({ ...config })
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setStatus('saving')
+
+    const res = await fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fields),
+    })
+
+    setStatus(res.ok ? 'saved' : 'error')
+    setTimeout(() => setStatus('idle'), 3000)
+  }
+
+  const inputClass =
+    'w-full bg-transparent border border-white/20 rounded px-3 py-2 text-white placeholder-gray-600 focus:outline-none focus:border-white/50 text-sm'
+  const labelClass = 'block text-xs uppercase tracking-widest text-gray-500 mb-1'
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-xl space-y-6">
+      <div>
+        <label className={labelClass}>Site Title</label>
+        <input
+          value={fields.site_title}
+          onChange={(e) => setFields({ ...fields, site_title: e.target.value })}
+          className={inputClass}
+        />
+      </div>
+      <div>
+        <label className={labelClass}>Photographer Name</label>
+        <input
+          value={fields.photographer_name}
+          onChange={(e) => setFields({ ...fields, photographer_name: e.target.value })}
+          className={inputClass}
+        />
+      </div>
+      <div>
+        <label className={labelClass}>Feedback Email</label>
+        <input
+          type="email"
+          value={fields.feedback_email}
+          onChange={(e) => setFields({ ...fields, feedback_email: e.target.value })}
+          className={inputClass}
+        />
+      </div>
+      <div>
+        <label className={labelClass}>About Blurb</label>
+        <textarea
+          value={fields.about_blurb}
+          onChange={(e) => setFields({ ...fields, about_blurb: e.target.value })}
+          rows={3}
+          className={inputClass + ' resize-none'}
+        />
+      </div>
+
+      <div className="flex items-center gap-4">
+        <button
+          type="submit"
+          disabled={status === 'saving'}
+          className="px-6 py-2.5 bg-white text-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-colors disabled:opacity-50"
+        >
+          {status === 'saving' ? 'Saving…' : 'Save Settings'}
+        </button>
+        {status === 'saved' && <span className="text-green-400 text-xs">Saved!</span>}
+        {status === 'error' && <span className="text-red-400 text-xs">Save failed.</span>}
+      </div>
+    </form>
+  )
+}

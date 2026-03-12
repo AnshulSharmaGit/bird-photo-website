@@ -1,0 +1,10 @@
+{
+  "album_name": "Bird Photography",
+  "supabase_url": "https://xxxxxxxxxxxx.supabase.co",
+  "supabase_service_role_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "cloudinary_cloud_name": "your_cloud_name",
+  "cloudinary_api_key": "123456789012345",
+  "cloudinary_api_secret": "your_api_secret",
+  "resend_api_key": "re_xxxxxxxxxxxx",
+  "alert_email": "your@email.com"
+}
