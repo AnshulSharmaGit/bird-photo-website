@@ -2,6 +2,8 @@ import { createServiceClient } from '@/lib/supabase/server'
 import SettingsForm from '@/components/admin/SettingsForm'
 import type { SiteConfig } from '@/types'
 
+export const dynamic = 'force-dynamic'
+
 export default async function SettingsPage() {
   const db = createServiceClient()
   const { data: rows } = await db.from('site_config').select('*')

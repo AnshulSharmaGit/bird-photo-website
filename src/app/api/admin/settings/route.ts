@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
 
 const ALLOWED_KEYS = ['site_title', 'photographer_name', 'feedback_email', 'about_blurb']
@@ -19,6 +20,9 @@ export async function POST(req: NextRequest) {
 
   const { error } = await db.from('site_config').upsert(upserts, { onConflict: 'key' })
   if (error) return NextResponse.json({ error: 'Save failed.' }, { status: 500 })
+
+  revalidatePath('/admin/settings')
+  revalidatePath('/')
 
   return NextResponse.json({ ok: true })
 }
