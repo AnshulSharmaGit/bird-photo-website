@@ -76,8 +76,7 @@ export default function PhotoUploadForm() {
     <form onSubmit={handleSubmit} className="max-w-xl space-y-6">
       {/* File drop zone */}
       <div
-        className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center cursor-pointer hover:border-white/40 transition-colors"
-        onClick={() => fileRef.current?.click()}
+        className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center hover:border-white/40 transition-colors"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault()
@@ -87,17 +86,24 @@ export default function PhotoUploadForm() {
       >
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={preview} alt="Preview" className="max-h-48 mx-auto rounded object-contain" />
+          <img src={preview} alt="Preview" className="max-h-48 mx-auto rounded object-contain mb-3" />
         ) : (
-          <p className="text-gray-500 text-sm">Drag & drop a photo here, or click to browse</p>
+          <p className="text-gray-500 text-sm mb-3">Drag & drop a photo here, or</p>
         )}
         <input
           ref={fileRef}
+          id="photo-file-input"
           type="file"
           accept="image/*,.heic,.HEIC"
-          className="hidden"
+          style={{ display: 'none' }}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
         />
+        <label
+          htmlFor="photo-file-input"
+          className="inline-block px-4 py-2 border border-white/30 text-white text-xs uppercase tracking-widest hover:bg-white/10 transition-colors cursor-pointer"
+        >
+          Choose File
+        </label>
       </div>
 
       <div>
