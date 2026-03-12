@@ -4,6 +4,117 @@
 
 A Next.js bird photography portfolio for Anshul's son. Public gallery with masonry layout, admin panel for photo management, and a Mac Photos daily sync script. All infrastructure runs on free tiers.
 
+## Overall Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        PUBLIC USER                          │
+│                    (any browser/device)                     │
+└───────────────────────────┬─────────────────────────────────┘
+                            │ HTTPS
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    VERCEL (hosting)                         │
+│              Next.js 16 — App Router + Turbopack            │
+│                                                             │
+│  Public pages (ISR)        Admin pages (SSR, auth-gated)    │
+│  /          gallery        /admin/login                     │
+│  /contact   form           /admin/dashboard                 │
+│                            /admin/photos                    │
+│                            /admin/settings                  │
+│                            /admin/sync-log                  │
+│                                                             │
+│  API routes (server-side, secrets never reach browser)      │
+│  POST /api/contact         POST /api/admin/upload           │
+│  GET/POST /api/admin/settings                               │
+│  PATCH/DELETE /api/admin/photos/[id]                        │
+└───────┬──────────────────────┬──────────────────────────────┘
+        │                      │
+        ▼                      ▼
+┌───────────────┐    ┌─────────────────────┐
+│   SUPABASE    │    │     CLOUDINARY      │
+│  (database)   │    │   (image storage)   │
+│               │    │                     │
+│  photos       │    │  folder: bird-photos│
+│  site_config  │    │  auto WebP + CDN    │
+│  contact_subs │    │  f_auto,q_auto,w_800│
+│  sync_logs    │    │                     │
+│  + Auth       │    └─────────────────────┘
+└───────────────┘
+        ▲
+        │ writes metadata
+        │
+┌─────────────────────────────────────────────────────────────┐
+│              MAC PHOTOS SYNC (local Python script)          │
+│                   runs daily at 06:00 via launchd           │
+│                                                             │
+│  Mac Photos Library                                         │
+│  └── Album: "Nikon Birds & Wildlife"                        │
+│       └── sync.py reads each photo                         │
+│            → skip if UUID already in Supabase              │
+│            → export to temp file (osxphotos)               │
+│            → upload to Cloudinary                          │
+│            → insert metadata row to Supabase               │
+│            → log result                                     │
+└─────────────────────────────────────────────────────────────┘
+        │ alert on failure
+        ▼
+┌───────────────┐
+│    RESEND     │
+│  (email API)  │
+│               │
+│ contact form  │
+│ sync alerts   │
+└───────────────┘
+```
+
+## Sync Flow — Step by Step
+
+When `sync/sync.py` runs (daily at 06:00 or manually):
+
+```
+1. Load sync/config.json
+   └── album_name, Supabase credentials, Cloudinary credentials, Resend key
+
+2. Connect to Supabase (service role key — full DB access)
+   └── SELECT mac_photos_uuid FROM photos
+   └── Build set of already-synced UUIDs
+
+3. Open Mac Photos library via osxphotos
+   └── Find album named "Nikon Birds & Wildlife"
+   └── Abort with error email if album not found
+
+4. For each photo in album:
+   ├── UUID already in known set? → SKIP (idempotent)
+   └── New photo:
+       ├── Export to temp JPEG via osxphotos
+       ├── Upload to Cloudinary (folder: bird-photos/, public_id: UUID)
+       │   └── Retry up to 3 times: 2s / 4s / 8s backoff
+       ├── Extract EXIF: date_taken, camera make+model
+       ├── INSERT row into Supabase photos table
+       │   └── bird_name defaults to filename (edit in admin panel later)
+       └── Delete temp file
+
+5. INSERT row into sync_logs table
+   └── photos_added, photos_skipped, duration_seconds
+
+6. Write entry to ~/Library/Logs/birdsite-sync.log
+
+7. On any unhandled exception:
+   └── Send alert email via Resend to alert_email
+   └── INSERT error row into sync_logs
+   └── Exit with code 1
+```
+
+**After sync completes:** Photos appear on the public gallery within 60 seconds (ISR revalidation). Bird names default to filenames — go to Admin → Photos to rename each species.
+
+**Sync config lives at:** `sync/config.json` (chmod 600, gitignored)
+**Album name configured:** `"Nikon Birds & Wildlife"`
+**Logs:** `~/Library/Logs/birdsite-sync.log`
+**Sync history in admin:** `/admin/sync-log`
+
+**Known fix:** `convert_to_jpeg` parameter was removed in newer osxphotos versions. The export call uses only `use_photos_export=False, overwrite=True`. Cloudinary handles HEIC natively.
+
 ## Key Commands
 
 ```bash

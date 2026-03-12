@@ -164,13 +164,11 @@ def sync(cfg: dict, dry_run: bool = False):
                 photos_added += 1
                 continue
 
-            # Export photo to temp file (osxphotos handles HEIC → JPEG)
+            # Export photo to temp file
             export_results = photo.export(
                 tmpdir,
                 use_photos_export=False,
                 overwrite=True,
-                convert_to_jpeg=True,
-                jpeg_quality=0.92,
             )
             if not export_results:
                 log.warning(f"    Export failed for {photo.original_filename}, skipping")
