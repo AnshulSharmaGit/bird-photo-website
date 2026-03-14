@@ -33,7 +33,7 @@ export default async function HomePage() {
   const { photos, config } = await getData()
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d]">
+    <div className="min-h-screen bg-[#1a1a18]">
       <NavBar siteTitle={config.site_title} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-12">
         <Gallery photos={photos} />
