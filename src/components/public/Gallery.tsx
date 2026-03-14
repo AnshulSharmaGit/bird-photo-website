@@ -46,7 +46,7 @@ export default function Gallery({ photos }: GalleryProps) {
           return (
             <button
               key={photo.id}
-              className="block w-full mb-1 overflow-hidden group break-inside-avoid cursor-pointer"
+              className="block w-full mb-1 break-inside-avoid cursor-pointer p-1 bg-white"
               onClick={() => setLightboxIndex(i)}
               aria-label={`Open ${photo.bird_name}`}
             >
@@ -55,7 +55,7 @@ export default function Gallery({ photos }: GalleryProps) {
                 alt={photo.bird_name}
                 width={600}
                 height={400}
-                className="w-full h-auto transition-[filter] duration-300 group-hover:brightness-110"
+                className="w-full h-auto transition-[filter] duration-300 hover:brightness-110"
                 loading="lazy"
                 unoptimized
               />

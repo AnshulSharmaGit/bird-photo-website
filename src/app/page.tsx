@@ -4,15 +4,17 @@ import Footer from '@/components/public/Footer'
 import Gallery from '@/components/public/Gallery'
 import type { Photo, SiteConfig } from '@/types'
 
-export const revalidate = 60 // ISR: revalidate every 60 seconds
+export const revalidate = 60
 
 async function getData() {
   const db = createServiceClient()
 
-  const [{ data: photos }, { data: configRows }] = await Promise.all([
-    db.from('photos').select('*').order('sort_order').order('created_at', { ascending: false }),
+  const [{ data: allPhotos }, { data: configRows }] = await Promise.all([
+    db.from('photos').select('*').order('created_at', { ascending: false }),
     db.from('site_config').select('*'),
   ])
+
+  const photos = (allPhotos ?? []) as Photo[]
 
   const config: SiteConfig = {
     site_title: 'Bird Photography',
@@ -24,7 +26,7 @@ async function getData() {
     (config as unknown as Record<string, string>)[row.key] = row.value
   })
 
-  return { photos: (photos ?? []) as Photo[], config }
+  return { photos, config }
 }
 
 export default async function HomePage() {

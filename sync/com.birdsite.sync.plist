@@ -9,7 +9,7 @@
   <key>ProgramArguments</key>
   <array>
     <!-- Replace USERNAME with your macOS username -->
-    <string>/usr/bin/python3</string>
+    <string>/Users/USERNAME/.pyenv/versions/3.13.9/bin/python3</string>
     <string>/Users/USERNAME/repos/bird-photo-website/sync/sync.py</string>
   </array>
 
@@ -22,6 +22,12 @@
     <integer>0</integer>
   </dict>
 
+  <!-- Also trigger automatically when Photos library changes (new photo added) -->
+  <key>WatchPaths</key>
+  <array>
+    <string>/Users/USERNAME/Pictures/Photos Library.photoslibrary/database/Photos.sqlite</string>
+  </array>
+
   <key>StandardOutPath</key>
   <string>/Users/USERNAME/Library/Logs/birdsite-sync.log</string>
 
@@ -33,10 +39,13 @@
     <key>HOME</key>
     <string>/Users/USERNAME</string>
     <key>PATH</key>
-    <string>/usr/local/bin:/usr/bin:/bin</string>
+    <string>/Users/USERNAME/.pyenv/versions/3.13.9/bin:/usr/local/bin:/usr/bin:/bin</string>
   </dict>
 
-  <!-- Restart on crash -->
+  <!-- Throttle: don't run more than once every 5 minutes even if Photos changes repeatedly -->
+  <key>ThrottleInterval</key>
+  <integer>300</integer>
+
   <key>KeepAlive</key>
   <false/>
 

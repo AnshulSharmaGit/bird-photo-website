@@ -15,15 +15,20 @@ import argparse
 import json
 import logging
 import os
+import signal
 import sys
 import tempfile
 import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+
+import io
 
 import cloudinary
 import cloudinary.uploader
 import osxphotos
+from PIL import Image
 from supabase import create_client
 
 # ---------------------------------------------------------------------------
@@ -84,6 +89,22 @@ def send_alert(cfg: dict, subject: str, body: str):
         urllib.request.urlopen(req, timeout=10)
     except Exception as e:
         log.warning(f"Failed to send alert email: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Timeout helper
+# ---------------------------------------------------------------------------
+@contextmanager
+def timeout(seconds: int):
+    def _handler(signum, frame):
+        raise TimeoutError(f"Timed out after {seconds}s")
+    old = signal.signal(signal.SIGALRM, _handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old)
 
 
 # ---------------------------------------------------------------------------
@@ -164,12 +185,23 @@ def sync(cfg: dict, dry_run: bool = False):
                 photos_added += 1
                 continue
 
-            # Export photo to temp file
-            export_results = photo.export(
-                tmpdir,
-                use_photos_export=False,
-                overwrite=True,
-            )
+            # Export photo to temp file (try native export first, fall back to Photos export)
+            try:
+                with timeout(30):
+                    export_results = photo.export(tmpdir, use_photos_export=False, overwrite=True)
+            except TimeoutError:
+                export_results = []
+                log.warning(f"    Native export timed out")
+
+            if not export_results:
+                log.info(f"    Native export failed, trying Photos export (60s timeout)…")
+                try:
+                    with timeout(60):
+                        export_results = photo.export(tmpdir, use_photos_export=True, overwrite=True)
+                except TimeoutError:
+                    export_results = []
+                    log.warning(f"    Photos export timed out, skipping {photo.original_filename}")
+
             if not export_results:
                 log.warning(f"    Export failed for {photo.original_filename}, skipping")
                 photos_skipped += 1
@@ -177,9 +209,32 @@ def sync(cfg: dict, dry_run: bool = False):
 
             exported_path = Path(export_results[0])
 
-            # Read file bytes
+            # Read and compress image to stay under Cloudinary's 10 MB limit
             with open(exported_path, "rb") as f:
                 image_bytes = f.read()
+
+            if len(image_bytes) > 9 * 1024 * 1024:  # > 9 MB → compress
+                try:
+                    img = Image.open(io.BytesIO(image_bytes))
+                    if img.mode not in ("RGB", "L"):
+                        img = img.convert("RGB")
+                    buf = io.BytesIO()
+                    quality = 85
+                    img.save(buf, format="JPEG", quality=quality, optimize=True)
+                    # Reduce quality further if still too large
+                    while buf.tell() > 9 * 1024 * 1024 and quality > 40:
+                        quality -= 10
+                        buf = io.BytesIO()
+                        img.save(buf, format="JPEG", quality=quality, optimize=True)
+                    image_bytes = buf.getvalue()
+                    log.info(f"    Compressed to {len(image_bytes) // 1024} KB (quality={quality})")
+                except Exception as e:
+                    log.warning(f"    Cannot compress ({e}), file is {len(image_bytes) // 1024} KB")
+                    if len(image_bytes) > 10 * 1024 * 1024:
+                        log.warning(f"    Too large to upload without compression, skipping")
+                        photos_skipped += 1
+                        exported_path.unlink(missing_ok=True)
+                        continue
 
             # Upload to Cloudinary (use UUID as stable public_id)
             secure_url = upload_with_retry(image_bytes, public_id=uuid)
@@ -190,8 +245,11 @@ def sync(cfg: dict, dry_run: bool = False):
             if photo.date:
                 date_taken = photo.date.strftime("%Y-%m-%d")
             if photo.exif_info:
-                parts = [photo.exif_info.make, photo.exif_info.model]
-                camera_str = " ".join(p for p in parts if p)
+                # osxphotos API varies by version: try newer names first, fall back to older
+                exif = photo.exif_info
+                make = getattr(exif, 'camera_make', None) or getattr(exif, 'make', None)
+                model = getattr(exif, 'camera_model', None) or getattr(exif, 'model', None)
+                camera_str = " ".join(p for p in [make, model] if p)
                 camera = camera_str or None
 
             # Insert into Supabase
