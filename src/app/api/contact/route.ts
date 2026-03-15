@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { resend } from '@/lib/resend'
 
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c] ?? c))
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json()
   const { name, email, message } = body
@@ -10,7 +14,7 @@ export async function POST(req: NextRequest) {
   if (!name?.trim() || !email?.trim() || !message?.trim()) {
     return NextResponse.json({ error: 'All fields are required.' }, { status: 400 })
   }
-  if (!/^\S+@\S+\.\S+$/.test(email)) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) {
     return NextResponse.json({ error: 'Invalid email address.' }, { status: 400 })
   }
   if (message.length > 2000) {
@@ -41,9 +45,9 @@ export async function POST(req: NextRequest) {
     replyTo: email,
     subject: `New message from ${name}`,
     html: `
-      <p><strong>From:</strong> ${name} &lt;${email}&gt;</p>
+      <p><strong>From:</strong> ${escapeHtml(name)} &lt;${escapeHtml(email)}&gt;</p>
       <hr />
-      <p>${message.replace(/\n/g, '<br/>')}</p>
+      <p>${escapeHtml(message).replace(/\n/g, '<br/>')}</p>
     `,
   })
 

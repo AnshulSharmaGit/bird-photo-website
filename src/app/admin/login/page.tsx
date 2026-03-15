@@ -27,7 +27,8 @@ function LoginForm() {
       return
     }
 
-    const next = searchParams.get('next') ?? '/admin/dashboard'
+    const raw = searchParams.get('next') ?? ''
+    const next = raw.startsWith('/admin') && !raw.startsWith('//') ? raw : '/admin/dashboard'
     router.push(next)
     router.refresh()
   }

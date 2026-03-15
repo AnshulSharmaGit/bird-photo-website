@@ -10,6 +10,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const { bird_name, description, location, date_taken, camera, lens, tags } = body
   if (!bird_name?.trim()) return NextResponse.json({ error: 'Bird name is required.' }, { status: 400 })
+  if (bird_name.length > 200) return NextResponse.json({ error: 'Bird name too long.' }, { status: 400 })
+  if (description && description.length > 2000) return NextResponse.json({ error: 'Description too long.' }, { status: 400 })
+  if (location && location.length > 200) return NextResponse.json({ error: 'Location too long.' }, { status: 400 })
 
   const db = createServiceClient()
   const { error } = await db

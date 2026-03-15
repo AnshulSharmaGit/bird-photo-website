@@ -11,6 +11,11 @@ export async function POST(req: NextRequest) {
   if (!file) return NextResponse.json({ error: 'No file provided.' }, { status: 400 })
   if (file.size > 20 * 1024 * 1024) return NextResponse.json({ error: 'File too large (max 20 MB).' }, { status: 400 })
 
+  const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'image/tiff']
+  if (!ALLOWED_MIMES.includes(file.type)) {
+    return NextResponse.json({ error: 'Invalid file type. Only JPEG, PNG, WebP, HEIC, and TIFF allowed.' }, { status: 400 })
+  }
+
   const bird_name = (form.get('bird_name') as string)?.trim()
   if (!bird_name) return NextResponse.json({ error: 'Bird name is required.' }, { status: 400 })
 
