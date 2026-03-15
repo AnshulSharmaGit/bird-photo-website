@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS photos (
   tags TEXT[] DEFAULT '{}',
   sort_order INTEGER DEFAULT 0,
   mac_photos_uuid TEXT UNIQUE,
+  description TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );

@@ -6,5 +6,6 @@
   "cloudinary_api_key": "123456789012345",
   "cloudinary_api_secret": "your_api_secret",
   "resend_api_key": "re_xxxxxxxxxxxx",
-  "alert_email": "your@email.com"
+  "alert_email": "your@email.com",
+  "google_api_key": "AIza..."
 }

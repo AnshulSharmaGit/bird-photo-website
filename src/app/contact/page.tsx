@@ -30,7 +30,7 @@ export default async function ContactPage() {
         </p>
         <ContactForm />
       </main>
-      <Footer photographerName={config.photographer_name} />
+      <Footer photographerName={config.photographer_name} aiDisclaimer={(config as Record<string, string>).ai_disclaimer} />
     </div>
   )
 }

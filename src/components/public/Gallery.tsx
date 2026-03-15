@@ -46,7 +46,7 @@ export default function Gallery({ photos }: GalleryProps) {
           return (
             <button
               key={photo.id}
-              className="block w-full mb-1 break-inside-avoid cursor-pointer p-0.5 bg-white shadow-sm hover:shadow-md transition-shadow duration-300"
+              className="block w-full mb-1 break-inside-avoid cursor-pointer p-0.5 bg-white shadow-sm hover:shadow-md transition-shadow duration-300 text-left"
               onClick={() => setLightboxIndex(i)}
               aria-label={`Open ${photo.bird_name}`}
             >
@@ -59,6 +59,12 @@ export default function Gallery({ photos }: GalleryProps) {
                 loading="lazy"
                 unoptimized
               />
+              {photo.description && (
+                <div className="px-2 pt-1.5 pb-2 bg-[#1a1a18]">
+                  <p className="text-xs font-semibold text-white leading-tight">{photo.bird_name}</p>
+                  <p className="text-xs text-white/60 mt-0.5 leading-snug line-clamp-2">{photo.description}</p>
+                </div>
+              )}
             </button>
           )
         })}

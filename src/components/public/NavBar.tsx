@@ -21,6 +21,12 @@ export default function NavBar({ siteTitle }: NavBarProps) {
             Gallery
           </Link>
           <Link
+            href="/species"
+            className="text-xs uppercase tracking-widest text-stone-400 hover:text-white transition-colors"
+          >
+            Species
+          </Link>
+          <Link
             href="/contact"
             className="text-xs uppercase tracking-widest text-stone-400 hover:text-white transition-colors"
           >

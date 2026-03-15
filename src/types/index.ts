@@ -10,6 +10,7 @@ export interface Photo {
   tags: string[]
   sort_order: number
   mac_photos_uuid: string | null
+  description: string | null
   created_at: string
   updated_at: string
 }
@@ -19,6 +20,7 @@ export interface SiteConfig {
   photographer_name: string
   feedback_email: string
   about_blurb: string
+  ai_disclaimer: string
 }
 
 export interface ContactFormData {

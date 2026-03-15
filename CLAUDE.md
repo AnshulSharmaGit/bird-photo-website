@@ -151,25 +151,27 @@ src/
 ├── app/
 │   ├── page.tsx                    # Public gallery (ISR, revalidate 60s)
 │   ├── contact/page.tsx            # Contact form
+│   ├── species/page.tsx            # Alphabetical species index
+│   ├── species/[name]/page.tsx     # All photos for a specific species + lightbox
 │   ├── admin/
 │   │   ├── layout.tsx              # Admin shell with NavBar
 │   │   ├── login/page.tsx          # Supabase email+password auth
 │   │   ├── dashboard/page.tsx      # Stats
-│   │   ├── photos/page.tsx         # Photo table
+│   │   ├── photos/page.tsx         # Photo table with search
 │   │   ├── photos/new/page.tsx     # Upload form
-│   │   ├── photos/[id]/edit/       # Edit metadata
+│   │   ├── photos/[id]/edit/       # Edit metadata (bird_name, description, location, tags…)
 │   │   ├── settings/page.tsx       # Site config
 │   │   └── sync-log/page.tsx       # Mac sync history
 │   └── api/
 │       ├── contact/route.ts        # Validates → DB → Resend email
 │       └── admin/
 │           ├── upload/route.ts     # Cloudinary upload → Supabase insert
-│           ├── photos/[id]/route.ts # PATCH (edit) / DELETE
+│           ├── photos/[id]/route.ts # PATCH (edit, incl. description) / DELETE
 │           └── settings/route.ts   # GET/POST site_config
 ├── components/
 │   ├── public/                     # Gallery, Lightbox, FilterBar, NavBar, Footer, ContactForm
-│   └── admin/                      # AdminNavBar, PhotoUploadForm, PhotoTable, PhotoEditForm,
-│                                   # SettingsForm, ConfirmDialog
+│   └── admin/                      # AdminNavBar, PhotoUploadForm, PhotoTable (with search),
+│                                   # PhotoEditForm (with description field), SettingsForm, ConfirmDialog
 ├── lib/
 │   ├── supabase/client.ts          # Browser Supabase client (@supabase/ssr)
 │   ├── supabase/server.ts          # Server Supabase client (service role)
@@ -184,6 +186,7 @@ supabase/
 
 sync/
 ├── sync.py                         # Mac Photos → Cloudinary → Supabase daily sync
+├── identify.py                     # Google Gemini AI bird identification + description
 ├── config.example.json             # Template for sync/config.json (secrets, album name)
 ├── install.sh                      # Installs Python deps + registers launchd job
 └── com.birdsite.sync.plist         # launchd schedule (06:00 daily)
@@ -192,7 +195,7 @@ sync/
 ## Database Schema
 
 Four tables in Supabase:
-- **`photos`** — cloudinary_public_id, cloudinary_url, bird_name, location, date_taken, camera, lens, tags[], sort_order, mac_photos_uuid
+- **`photos`** — cloudinary_public_id, cloudinary_url, bird_name, description, location, date_taken, camera, lens, tags[], sort_order, mac_photos_uuid
 - **`site_config`** — key/value pairs: site_title, photographer_name, feedback_email, about_blurb
 - **`contact_submissions`** — audit trail of contact form messages
 - **`sync_logs`** — history of Mac sync runs (count, errors, duration)
@@ -205,6 +208,17 @@ Row Level Security: public SELECT on photos + site_config; writes require servic
 - Login at `/admin/login` uses `supabase.auth.signInWithPassword()`
 - `src/middleware.ts` guards all `/admin/*` (except `/admin/login`) and `/api/admin/*` routes
 - Session stored in cookies via `@supabase/ssr`
+
+## Public Pages
+
+| Route | Description |
+|---|---|
+| `/` | Gallery — all photos newest-first, masonry layout |
+| `/species` | Alphabetical species index — one card per unique identified bird |
+| `/species/[name]` | All photos for a species, click to open lightbox |
+| `/contact` | Contact form |
+
+Nav bar: **Gallery · Species · Contact**
 
 ## Image URLs
 
@@ -229,6 +243,31 @@ python3 sync/sync.py            # Run manually
 ```
 
 Runs daily at 06:00. Logs at `~/Library/Logs/birdsite-sync.log`. Requires Terminal.app to have Full Disk Access (System Settings → Privacy & Security → Full Disk Access).
+
+## Bird Identification Script
+
+`sync/identify.py` reads photos from Supabase, sends each image to Google Gemini for visual identification, and updates `bird_name` + `description` in the database.
+
+```bash
+cd sync
+python3 identify.py --dry-run --limit 5   # Preview without updating
+python3 identify.py --limit 100           # Identify 100 photos
+python3 identify.py                       # Identify all remaining
+```
+
+- Only processes photos where `bird_name` still looks like a camera filename (`_SIV*`, `SIV_*`, `IMG_*`, `TBD`)
+- Manually renamed photos are skipped
+- Logs to `~/Library/Logs/birdsite-identify.log`
+- Requires `google_api_key` in `sync/config.json` (get from [aistudio.google.com/apikey](https://aistudio.google.com/apikey))
+- Uses `gemini-2.5-flash` model
+- The `description` column must exist: `ALTER TABLE photos ADD COLUMN IF NOT EXISTS description TEXT;`
+- Gallery shows bird name + description as hover overlay (only for identified photos)
+
+**Known issue:** Google free tier has `limit: 0` for some accounts/regions. Enable billing on Google Cloud project and generate a new API key.
+
+## Database Schema (updated)
+
+- `photos` table now includes `description TEXT` column added via: `ALTER TABLE photos ADD COLUMN IF NOT EXISTS description TEXT;`
 
 ## Deployment
 

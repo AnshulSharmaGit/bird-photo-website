@@ -11,6 +11,15 @@ export default function PhotoTable({ photos }: { photos: Photo[] }) {
   const router = useRouter()
   const [deleteTarget, setDeleteTarget] = useState<Photo | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const filtered = search.trim()
+    ? photos.filter((p) =>
+        p.bird_name.toLowerCase().includes(search.toLowerCase()) ||
+        p.location?.toLowerCase().includes(search.toLowerCase()) ||
+        p.tags?.some((t) => t.toLowerCase().includes(search.toLowerCase()))
+      )
+    : photos
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -27,6 +36,19 @@ export default function PhotoTable({ photos }: { photos: Photo[] }) {
 
   return (
     <>
+      <div className="mb-4">
+        <input
+          type="search"
+          placeholder="Search by bird name, location or tag…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full max-w-sm bg-transparent border border-white/20 rounded px-3 py-2 text-white placeholder-gray-600 focus:outline-none focus:border-white/50 text-sm"
+        />
+        {search && (
+          <p className="text-gray-500 text-xs mt-1">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</p>
+        )}
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
           <thead>
@@ -40,7 +62,7 @@ export default function PhotoTable({ photos }: { photos: Photo[] }) {
             </tr>
           </thead>
           <tbody>
-            {photos.map((photo) => {
+            {filtered.map((photo) => {
               const thumbUrl = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto,w_120/${photo.cloudinary_public_id}`
               return (
                 <tr key={photo.id} className="border-b border-white/5 hover:bg-white/2">

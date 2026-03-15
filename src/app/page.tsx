@@ -21,6 +21,7 @@ async function getData() {
     photographer_name: 'Photographer',
     feedback_email: '',
     about_blurb: '',
+    ai_disclaimer: '',
   }
   configRows?.forEach((row) => {
     (config as unknown as Record<string, string>)[row.key] = row.value
@@ -38,7 +39,7 @@ export default async function HomePage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-12">
         <Gallery photos={photos} />
       </main>
-      <Footer photographerName={config.photographer_name} />
+      <Footer photographerName={config.photographer_name} aiDisclaimer={config.ai_disclaimer} />
     </div>
   )
 }

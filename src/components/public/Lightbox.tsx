@@ -90,6 +90,9 @@ export default function Lightbox({ photos, index, onClose, onNav }: LightboxProp
         </div>
         <div className="mt-4 text-center space-y-1">
           <p className="text-white text-lg font-medium">{photo.bird_name}</p>
+          {photo.description && (
+            <p className="text-gray-300 text-sm max-w-xl">{photo.description}</p>
+          )}
           <p className="text-gray-400 text-sm">
             {[photo.location, photo.date_taken].filter(Boolean).join(' · ')}
           </p>

@@ -13,6 +13,7 @@ export default async function SettingsPage() {
     photographer_name: 'Photographer',
     feedback_email: '',
     about_blurb: '',
+    ai_disclaimer: '',
   }
   rows?.forEach((row) => {
     (config as unknown as Record<string, string>)[row.key] = row.value

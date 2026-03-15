@@ -11,6 +11,7 @@ export default function PhotoEditForm({ photo }: { photo: Photo }) {
 
   const [fields, setFields] = useState({
     bird_name: photo.bird_name,
+    description: photo.description ?? '',
     location: photo.location ?? '',
     date_taken: photo.date_taken ?? '',
     camera: photo.camera ?? '',
@@ -29,6 +30,7 @@ export default function PhotoEditForm({ photo }: { photo: Photo }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...fields,
+        description: fields.description.trim() || null,
         tags: fields.tags.split(',').map((t) => t.trim()).filter(Boolean),
       }),
     })
@@ -57,6 +59,17 @@ export default function PhotoEditForm({ photo }: { photo: Photo }) {
           onChange={(e) => setFields({ ...fields, bird_name: e.target.value })}
           className={inputClass}
           required
+        />
+      </div>
+
+      <div>
+        <label className={labelClass}>Description</label>
+        <textarea
+          value={fields.description}
+          onChange={(e) => setFields({ ...fields, description: e.target.value })}
+          className={inputClass}
+          rows={3}
+          placeholder="Short description of this species…"
         />
       </div>
 

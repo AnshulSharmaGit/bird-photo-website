@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/server'
 
-const ALLOWED_KEYS = ['site_title', 'photographer_name', 'feedback_email', 'about_blurb']
+const ALLOWED_KEYS = ['site_title', 'photographer_name', 'feedback_email', 'about_blurb', 'ai_disclaimer']
 
 export async function GET() {
   const db = createServiceClient()

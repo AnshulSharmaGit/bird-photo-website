@@ -8,13 +8,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const { id } = await params
   const body = await req.json()
 
-  const { bird_name, location, date_taken, camera, lens, tags } = body
+  const { bird_name, description, location, date_taken, camera, lens, tags } = body
   if (!bird_name?.trim()) return NextResponse.json({ error: 'Bird name is required.' }, { status: 400 })
 
   const db = createServiceClient()
   const { error } = await db
     .from('photos')
-    .update({ bird_name, location: location || null, date_taken: date_taken || null, camera: camera || null, lens: lens || null, tags: tags ?? [] })
+    .update({ bird_name, description: description || null, location: location || null, date_taken: date_taken || null, camera: camera || null, lens: lens || null, tags: tags ?? [] })
     .eq('id', id)
 
   if (error) return NextResponse.json({ error: 'Update failed.' }, { status: 500 })
