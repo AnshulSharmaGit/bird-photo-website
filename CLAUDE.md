@@ -46,7 +46,7 @@ A Next.js bird photography portfolio for Anshul's son. Public gallery with mason
         │
 ┌─────────────────────────────────────────────────────────────┐
 │              MAC PHOTOS SYNC (local Python script)          │
-│                   runs daily at 06:00 via launchd           │
+│                        run manually                         │
 │                                                             │
 │  Mac Photos Library                                         │
 │  └── Album: "Nikon Birds & Wildlife"                        │
@@ -118,10 +118,23 @@ When `sync/sync.py` runs (daily at 06:00 or manually):
 ## Key Commands
 
 ```bash
+# Development
 npm run dev       # Start dev server at http://localhost:3000
 npm run build     # Production build (run before pushing to check for errors)
 npm run lint      # ESLint check
+
+# Sync & Identify (run from repo root, requires Terminal Full Disk Access)
+python3 sync/sync.py                        # Upload new photos from Mac Photos → Cloudinary → Supabase
+python3 sync/sync.py --dry-run             # Preview what would be uploaded without uploading
+python3 sync/identify.py                   # AI-identify all unidentified photos (Gemini)
+python3 sync/identify.py --dry-run --limit 5  # Preview identification without updating DB
+tail -f ~/Library/Logs/birdsite-sync.log   # Watch sync logs in real time
+
+# Git
+git add . && git commit -m "message" && git push origin main  # Commit and push to GitHub/Vercel
 ```
+
+**Note:** The automatic daily sync (launchd job) has been disabled. Run `python3 sync/sync.py` manually when you want to sync new photos.
 
 ## Tech Stack
 
