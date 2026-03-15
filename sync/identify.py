@@ -89,12 +89,20 @@ def run(cfg: dict, limit: int | None, dry_run: bool):
 
     client = genai.Client(api_key=cfg["google_api_key"])
 
-    # Fetch all photos
-    resp = sb.table("photos").select("id,bird_name,cloudinary_url").execute()
-    all_photos = resp.data or []
+    # Fetch all photos (paginate past Supabase 1000-row limit)
+    all_photos = []
+    page_size = 1000
+    offset = 0
+    while True:
+        resp = sb.table("photos").select("id,bird_name,cloudinary_url,description").range(offset, offset + page_size - 1).execute()
+        batch = resp.data or []
+        all_photos.extend(batch)
+        if len(batch) < page_size:
+            break
+        offset += page_size
 
-    # Filter to only unidentified ones
-    to_process = [p for p in all_photos if looks_like_filename(p["bird_name"])]
+    # Process photos with filename-like names OR missing description
+    to_process = [p for p in all_photos if looks_like_filename(p["bird_name"]) or not p.get("description")]
 
     if limit:
         to_process = to_process[:limit]

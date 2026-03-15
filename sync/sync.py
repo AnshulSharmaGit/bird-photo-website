@@ -123,6 +123,9 @@ def upload_with_retry(buffer: bytes, public_id: str, max_attempts=3) -> str:
             )
             return result["secure_url"]
         except Exception as e:
+            err = str(e)
+            if "Resource is invalid" in err or "Bad Request" in err:
+                raise  # not retryable — corrupt/empty file
             if attempt == max_attempts:
                 raise
             wait = 2 ** attempt
@@ -142,11 +145,21 @@ def sync(cfg: dict, dry_run: bool = False):
     # --- Connect to Supabase ---
     sb = create_client(cfg["supabase_url"], cfg["supabase_service_role_key"])
 
-    # --- Fetch known UUIDs ---
-    log.info("Fetching known UUIDs from Supabase…")
-    resp = sb.table("photos").select("mac_photos_uuid").not_.is_("mac_photos_uuid", "null").execute()
-    known_uuids = {row["mac_photos_uuid"] for row in (resp.data or [])}
-    log.info(f"  {len(known_uuids)} photos already synced")
+    # --- Fetch known UUIDs and cloudinary_public_ids (paginate past Supabase 1000-row limit) ---
+    log.info("Fetching known photos from Supabase…")
+    all_rows = []
+    page_size = 1000
+    offset = 0
+    while True:
+        resp = sb.table("photos").select("mac_photos_uuid,cloudinary_public_id").range(offset, offset + page_size - 1).execute()
+        batch = resp.data or []
+        all_rows.extend(batch)
+        if len(batch) < page_size:
+            break
+        offset += page_size
+    known_uuids = {row["mac_photos_uuid"] for row in all_rows if row.get("mac_photos_uuid")}
+    known_public_ids = {row["cloudinary_public_id"] for row in all_rows if row.get("cloudinary_public_id")}
+    log.info(f"  {len(all_rows)} photos in DB ({len(known_uuids)} with UUID)")
 
     # --- Configure Cloudinary ---
     cloudinary.config(
@@ -173,7 +186,7 @@ def sync(cfg: dict, dry_run: bool = False):
         for photo in photos:
             uuid = photo.uuid
 
-            if uuid in known_uuids:
+            if uuid in known_uuids or f"bird-photos/{uuid}" in known_public_ids:
                 log.info(f"  SKIP  {photo.original_filename} ({uuid})")
                 photos_skipped += 1
                 continue
@@ -236,8 +249,20 @@ def sync(cfg: dict, dry_run: bool = False):
                         exported_path.unlink(missing_ok=True)
                         continue
 
+            # Skip empty files before uploading
+            if not image_bytes:
+                log.warning(f"    Exported file is empty, skipping {photo.original_filename}")
+                photos_skipped += 1
+                continue
+
             # Upload to Cloudinary (use UUID as stable public_id)
-            secure_url = upload_with_retry(image_bytes, public_id=uuid)
+            try:
+                secure_url = upload_with_retry(image_bytes, public_id=uuid)
+            except Exception as e:
+                log.warning(f"    Upload failed for {photo.original_filename}: {e}, skipping")
+                photos_skipped += 1
+                exported_path.unlink(missing_ok=True)
+                continue
 
             # Build metadata from EXIF
             date_taken = None
@@ -252,8 +277,8 @@ def sync(cfg: dict, dry_run: bool = False):
                 camera_str = " ".join(p for p in [make, model] if p)
                 camera = camera_str or None
 
-            # Insert into Supabase
-            sb.table("photos").insert({
+            # Upsert into Supabase (ignore if cloudinary_public_id already exists)
+            sb.table("photos").upsert({
                 "cloudinary_public_id": f"bird-photos/{uuid}",
                 "cloudinary_url": secure_url,
                 "bird_name": photo.original_filename.rsplit(".", 1)[0],  # filename as default
@@ -263,7 +288,7 @@ def sync(cfg: dict, dry_run: bool = False):
                 "lens": None,
                 "tags": [],
                 "mac_photos_uuid": uuid,
-            }).execute()
+            }, on_conflict="cloudinary_public_id", ignore_duplicates=True).execute()
 
             photos_added += 1
             log.info(f"    ✓ Uploaded and saved")

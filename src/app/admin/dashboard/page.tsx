@@ -4,8 +4,9 @@ import Link from 'next/link'
 export default async function DashboardPage() {
   const db = createServiceClient()
 
-  const [{ count: photoCount }, { data: lastSync }] = await Promise.all([
+  const [{ count: photoCount }, { count: unidentifiedCount }, { data: lastSync }] = await Promise.all([
     db.from('photos').select('*', { count: 'exact', head: true }),
+    db.from('photos').select('*', { count: 'exact', head: true }).or('description.is.null,bird_name.ilike._SIV%,bird_name.ilike.SIV_%,bird_name.ilike.IMG_%'),
     db.from('sync_logs').select('*').order('run_at', { ascending: false }).limit(1).single(),
   ])
 
@@ -13,8 +14,9 @@ export default async function DashboardPage() {
     <div>
       <h1 className="text-white text-2xl font-light mb-8">Dashboard</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-10">
         <StatCard label="Total Photos" value={String(photoCount ?? 0)} />
+        <StatCard label="Not Identified" value={String(unidentifiedCount ?? 0)} />
         <StatCard
           label="Last Sync"
           value={lastSync ? new Date(lastSync.run_at).toLocaleDateString() : 'Never'}
