@@ -27,7 +27,7 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 flex-wrap">
         <Link
           href="/admin/photos/new"
           className="px-5 py-2.5 bg-white text-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-colors"
@@ -40,6 +40,14 @@ export default async function DashboardPage() {
         >
           Manage Photos
         </Link>
+        <a
+          href="https://vercel.com/anshulsharmagit/bird-photo-website/analytics"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-5 py-2.5 border border-white/20 text-white text-xs uppercase tracking-widest hover:border-white/50 transition-colors"
+        >
+          View Analytics ↗
+        </a>
       </div>
     </div>
   )
