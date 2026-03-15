@@ -36,7 +36,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-[#1a1a18]">
       <NavBar siteTitle={config.site_title} />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-32 sm:pt-24 pb-12">
         <Gallery photos={photos} />
       </main>
       <Footer photographerName={config.photographer_name} aiDisclaimer={config.ai_disclaimer} />

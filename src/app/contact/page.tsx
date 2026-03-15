@@ -21,7 +21,7 @@ export default async function ContactPage() {
   return (
     <div className="min-h-screen bg-[#0d0d0d]">
       <NavBar siteTitle={config.site_title} />
-      <main className="max-w-xl mx-auto px-6 pt-32 pb-20">
+      <main className="max-w-xl mx-auto px-6 pt-36 sm:pt-32 pb-20">
         <h1 className="text-2xl font-light tracking-widest uppercase text-white mb-2 text-center">
           Contact
         </h1>

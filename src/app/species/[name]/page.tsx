@@ -36,7 +36,7 @@ export default function SpeciesDetailPage() {
   return (
     <div className="min-h-screen bg-[#1a1a18]">
       <NavBar siteTitle={siteTitle} />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-32 sm:pt-24 pb-12">
         <div className="mb-6">
           <Link href="/species" className="text-stone-500 hover:text-white text-xs uppercase tracking-widest transition-colors">
             ← Species Index
